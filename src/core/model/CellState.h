@@ -68,11 +68,13 @@ struct CellState
     }
 
     bool canGrow(double growth_energy_threshold,
-                 double health_min_for_growth,
-                 double stress_max_for_growth) const
+        double health_min_for_growth,
+        double stress_max_for_growth) const
     {
         return alive
             && status != CellStatus::Dead
+            && status != CellStatus::Dividing
+            && division_readiness < 1.0
             && energy > growth_energy_threshold
             && health > health_min_for_growth
             && stress < stress_max_for_growth

@@ -11,7 +11,7 @@ namespace core
 
 inline double clamp01(double x)
 {
-    return std::clamp(x, 0.0, 1.0);
+    return std::max(0.0, std::min(1.0, x));
 }
 
 inline double clampMin(double x, double lo)
