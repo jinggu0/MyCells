@@ -1,10 +1,11 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "components"
 
 ApplicationWindow {
-    width: 1280
-    height: 820
+    width: 1380
+    height: 900
     visible: true
     title: "MyCells Dashboard"
 
@@ -24,14 +25,14 @@ ApplicationWindow {
 
             Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 64
+                Layout.preferredHeight: 72
                 color: "#1f2937"
                 radius: 16
 
                 RowLayout {
                     anchors.fill: parent
                     anchors.margins: 16
-                    spacing: 16
+                    spacing: 14
 
                     Text {
                         text: "MyCells"
@@ -80,6 +81,12 @@ ApplicationWindow {
                         text: "Refresh"
                         onClicked: appController.refresh()
                     }
+
+                    Button {
+                        text: "Reset / Initialize"
+                        highlighted: true
+                        onClicked: resetDialog.open()
+                    }
                 }
             }
 
@@ -94,9 +101,21 @@ ApplicationWindow {
                     Layout.preferredWidth: 2
                     spacing: 16
 
+                    CellScene {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 360
+                        mass: appController.mass
+                        energy: appController.energy
+                        health: appController.health
+                        stress: appController.stress
+                        divisionReadiness: appController.divisionReadiness
+                        nutrientDensity: appController.nutrientDensity
+                        feedBurstSerial: appController.feedBurstSerial
+                    }
+
                     Rectangle {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 220
+                        Layout.preferredHeight: 180
                         color: "#1f2937"
                         radius: 16
 
@@ -105,7 +124,7 @@ ApplicationWindow {
                             anchors.margins: 20
                             columns: 2
                             rowSpacing: 10
-                            columnSpacing: 24
+                            columnSpacing: 26
 
                             Text { text: "Mass"; color: "#e5e7eb"; font.pixelSize: 18 }
                             Text { text: Number(appController.mass).toFixed(6); color: "white"; font.pixelSize: 18 }
@@ -127,64 +146,43 @@ ApplicationWindow {
                         }
                     }
 
-                    Rectangle {
+                    GridLayout {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        color: "#1f2937"
-                        radius: 16
+                        columns: 2
+                        rowSpacing: 16
+                        columnSpacing: 16
 
-                        ColumnLayout {
-                            anchors.fill: parent
-                            anchors.margins: 20
-                            spacing: 12
+                        MiniLineChart {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            title: "Mass"
+                            seriesData: appController.massSeries
+                            lineColor: "#60a5fa"
+                        }
 
-                            Text {
-                                text: "Recent Events"
-                                color: "white"
-                                font.pixelSize: 22
-                                font.bold: true
-                            }
+                        MiniLineChart {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            title: "Energy"
+                            seriesData: appController.energySeries
+                            lineColor: "#34d399"
+                        }
 
-                            ListView {
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
-                                clip: true
-                                spacing: 8
-                                model: appController.recentEvents
+                        MiniLineChart {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            title: "Health"
+                            seriesData: appController.healthSeries
+                            lineColor: "#fbbf24"
+                        }
 
-                                delegate: Rectangle {
-                                    width: ListView.view.width
-                                    height: 86
-                                    radius: 12
-                                    color: "#111827"
-
-                                    Column {
-                                        anchors.fill: parent
-                                        anchors.margins: 12
-                                        spacing: 4
-
-                                        Text {
-                                            text: modelData.title + " (" + modelData.severity + ")"
-                                            color: "white"
-                                            font.pixelSize: 16
-                                            font.bold: true
-                                        }
-
-                                        Text {
-                                            text: modelData.description
-                                            color: "#d1d5db"
-                                            font.pixelSize: 14
-                                            wrapMode: Text.Wrap
-                                        }
-
-                                        Text {
-                                            text: modelData.time
-                                            color: "#9ca3af"
-                                            font.pixelSize: 12
-                                        }
-                                    }
-                                }
-                            }
+                        MiniLineChart {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            title: "Stress"
+                            seriesData: appController.stressSeries
+                            lineColor: "#f87171"
                         }
                     }
                 }
@@ -197,7 +195,7 @@ ApplicationWindow {
 
                     Rectangle {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 320
+                        Layout.preferredHeight: 360
                         color: "#1f2937"
                         radius: 16
 
@@ -228,6 +226,7 @@ ApplicationWindow {
 
                             Button {
                                 text: "Feed"
+                                Layout.fillWidth: true
                                 onClicked: appController.feed(feedAmount)
                             }
 
@@ -246,6 +245,7 @@ ApplicationWindow {
 
                             Button {
                                 text: "Apply Temperature"
+                                Layout.fillWidth: true
                                 onClicked: appController.setTemperature(targetTemperature)
                             }
 
@@ -264,11 +264,13 @@ ApplicationWindow {
 
                             Button {
                                 text: "Apply pH"
+                                Layout.fillWidth: true
                                 onClicked: appController.setPh(targetPh)
                             }
 
                             Button {
                                 text: "Reduce Toxin"
+                                Layout.fillWidth: true
                                 onClicked: appController.reduceToxin(0.1)
                             }
 
@@ -281,6 +283,7 @@ ApplicationWindow {
 
                             Button {
                                 text: "Rename Cell"
+                                Layout.fillWidth: true
                                 onClicked: appController.renameCell(targetName)
                             }
                         }
@@ -298,9 +301,57 @@ ApplicationWindow {
                             spacing: 12
 
                             Text {
+                                text: "Recent Events"
+                                color: "white"
+                                font.pixelSize: 20
+                                font.bold: true
+                            }
+
+                            ListView {
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 180
+                                clip: true
+                                spacing: 8
+                                model: appController.recentEvents
+
+                                delegate: Rectangle {
+                                    width: ListView.view.width
+                                    height: 82
+                                    radius: 12
+                                    color: "#111827"
+
+                                    Column {
+                                        anchors.fill: parent
+                                        anchors.margins: 12
+                                        spacing: 4
+
+                                        Text {
+                                            text: modelData.title + " (" + modelData.severity + ")"
+                                            color: "white"
+                                            font.pixelSize: 15
+                                            font.bold: true
+                                        }
+
+                                        Text {
+                                            text: modelData.description
+                                            color: "#d1d5db"
+                                            font.pixelSize: 13
+                                            wrapMode: Text.Wrap
+                                        }
+
+                                        Text {
+                                            text: modelData.time
+                                            color: "#9ca3af"
+                                            font.pixelSize: 12
+                                        }
+                                    }
+                                }
+                            }
+
+                            Text {
                                 text: "Recent User Actions"
                                 color: "white"
-                                font.pixelSize: 22
+                                font.pixelSize: 20
                                 font.bold: true
                             }
 
@@ -313,7 +364,7 @@ ApplicationWindow {
 
                                 delegate: Rectangle {
                                     width: ListView.view.width
-                                    height: 72
+                                    height: 74
                                     radius: 12
                                     color: "#111827"
 
@@ -325,21 +376,21 @@ ApplicationWindow {
                                         Text {
                                             text: modelData.type
                                             color: "white"
-                                            font.pixelSize: 16
+                                            font.pixelSize: 15
                                             font.bold: true
                                         }
 
                                         Text {
                                             text: modelData.payload
                                             color: "#d1d5db"
-                                            font.pixelSize: 13
+                                            font.pixelSize: 12
                                             wrapMode: Text.WrapAnywhere
                                         }
 
                                         Text {
                                             text: modelData.time
                                             color: "#9ca3af"
-                                            font.pixelSize: 12
+                                            font.pixelSize: 11
                                         }
                                     }
                                 }
@@ -357,13 +408,26 @@ ApplicationWindow {
 
                 Text {
                     anchors.centerIn: parent
-                    text: appController.errorMessage.length > 0
-                          ? appController.errorMessage
-                          : "Ready"
+                    text: appController.errorMessage.length > 0 ? appController.errorMessage : "Ready"
                     color: "white"
                     font.pixelSize: 14
                 }
             }
+        }
+    }
+
+    Dialog {
+        id: resetDialog
+        modal: true
+        title: "Reset Simulation"
+        anchors.centerIn: parent
+        standardButtons: Dialog.Yes | Dialog.No
+        onAccepted: appController.resetSimulation()
+
+        Label {
+            text: "Reset the current cell and initialize the simulation again?"
+            wrapMode: Text.Wrap
+            width: 320
         }
     }
 }

@@ -7,6 +7,7 @@
 #include <QVariantList>
 #include <QString>
 
+#include <deque>
 #include <memory>
 
 class AppController : public QObject
@@ -36,6 +37,13 @@ class AppController : public QObject
     Q_PROPERTY(QVariantList recentEvents READ recentEvents NOTIFY recentEventsChanged)
     Q_PROPERTY(QVariantList recentActions READ recentActions NOTIFY recentActionsChanged)
 
+    Q_PROPERTY(QVariantList massSeries READ massSeries NOTIFY chartsChanged)
+    Q_PROPERTY(QVariantList energySeries READ energySeries NOTIFY chartsChanged)
+    Q_PROPERTY(QVariantList healthSeries READ healthSeries NOTIFY chartsChanged)
+    Q_PROPERTY(QVariantList stressSeries READ stressSeries NOTIFY chartsChanged)
+
+    Q_PROPERTY(int feedBurstSerial READ feedBurstSerial NOTIFY feedBurstChanged)
+
 public:
     explicit AppController(QObject* parent = nullptr);
 
@@ -53,6 +61,7 @@ public:
     Q_INVOKABLE void setPh(double value);
     Q_INVOKABLE void reduceToxin(double amount);
     Q_INVOKABLE void renameCell(const QString& newName);
+    Q_INVOKABLE void resetSimulation();
 
     Q_INVOKABLE void refresh();
 
@@ -79,22 +88,44 @@ public:
     QVariantList recentEvents() const;
     QVariantList recentActions() const;
 
+    QVariantList massSeries() const;
+    QVariantList energySeries() const;
+    QVariantList healthSeries() const;
+    QVariantList stressSeries() const;
+
+    int feedBurstSerial() const;
+
 signals:
     void stateChanged();
     void runningChanged();
     void errorMessageChanged();
     void recentEventsChanged();
     void recentActionsChanged();
+    void chartsChanged();
+    void feedBurstChanged();
 
 private slots:
     void onTick();
 
 private:
+    struct SamplePoint
+    {
+        double t = 0.0;
+        double mass = 0.0;
+        double energy = 0.0;
+        double health = 0.0;
+        double stress = 0.0;
+    };
+
     void setError(const QString& msg);
     void clearError();
     void syncLists();
+
     QVariantList buildRecentEvents() const;
     QVariantList buildRecentActions() const;
+
+    void appendCurrentSample();
+    void rebuildChartSeries();
 
 private:
     std::unique_ptr<acell::services::SimulationService> sim_;
@@ -104,4 +135,13 @@ private:
 
     QVariantList recent_events_;
     QVariantList recent_actions_;
+
+    std::deque<SamplePoint> samples_;
+    QVariantList mass_series_;
+    QVariantList energy_series_;
+    QVariantList health_series_;
+    QVariantList stress_series_;
+
+    int feed_burst_serial_ = 0;
+    int max_samples_ = 180;
 };

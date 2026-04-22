@@ -247,6 +247,8 @@ if(MYCELLS_BUILD_APP)
             NO_IMPORT_SCAN
             QML_FILES
                 src/ui/qml/Main.qml
+                src/ui/qml/components/MiniLineChart.qml
+                src/ui/qml/components/CellScene.qml
         )
 
         set_target_properties(MyCells PROPERTIES

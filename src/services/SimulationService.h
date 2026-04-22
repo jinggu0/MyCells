@@ -36,6 +36,7 @@ public:
     void setPh(double ph);
     void reduceToxin(double amount);
     void renameCell(const std::string& new_name);
+    void resetSimulation(bool clearHistory = true);
 
     std::vector<storage::EventLogEntry> loadRecentEvents(int limit);
     std::vector<storage::UserActionEntry> loadRecentActions(int limit);

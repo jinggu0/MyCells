@@ -444,6 +444,63 @@ void SimulationService::renameCell(const std::string& new_name)
     }
 }
 
+void acell::services::SimulationService::resetSimulation(bool clearHistory)
+{
+    if(!initialized_)
+    {
+        throw std::runtime_error("SimulationService::initialize must be called first.");
+    }
+
+    const std::string now = utils::nowIsoUtc();
+
+    db_.beginTransaction();
+    try
+    {
+        // 기본 세포 상태 재생성
+        core::CellState new_cell;
+        new_cell.id = cell_id_;
+        new_cell.uuid = cell_uuid_;
+        new_cell.name = cell_.name.empty() ? "My Cell" : cell_.name;
+        new_cell.model_type = core::ModelType::MSC1;
+        new_cell.status = core::CellStatus::Alive;
+        new_cell.growth_phase = core::GrowthPhase::Lag;
+        new_cell.generation = 0;
+        new_cell.normalize();
+
+        // 기본 환경 상태 재생성
+        core::EnvironmentState new_env;
+        new_env.normalize();
+
+        cell_ = new_cell;
+        env_ = new_env;
+        last_simulated_at_ = now;
+
+        if(clearHistory)
+        {
+            db_.exec("DELETE FROM event_logs WHERE cell_id = " + std::to_string(cell_id_) + ";");
+            db_.exec("DELETE FROM user_actions WHERE cell_id = " + std::to_string(cell_id_) + ";");
+            db_.exec("DELETE FROM time_series_samples WHERE cell_id = " + std::to_string(cell_id_) + ";");
+        }
+
+        persistCurrentState(now);
+
+        logSimpleEvent(
+            "simulation_reset",
+            "notice",
+            "Simulation reset",
+            "Cell and environment state were reset to defaults.",
+            now
+        );
+
+        db_.commit();
+    }
+    catch(...)
+    {
+        db_.rollback();
+        throw;
+    }
+}
+
 const core::CellState& SimulationService::cell() const
 {
     return cell_;
