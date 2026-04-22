@@ -17,6 +17,49 @@ option(MYCELLS_USE_SYSTEM_SQLITE3 "Use find_package(SQLite3) first" ON)
 
 include(CTest)
 
+if(MYCELLS_BUILD_APP)
+    find_package(Qt6 QUIET COMPONENTS Core Gui Quick Qml QuickControls2)
+    if(NOT Qt6_FOUND)
+        message(FATAL_ERROR
+            "[MyCells] Qt6 was not found, but MYCELLS_BUILD_APP is ON.\n"
+            "Install Qt 6, then configure with the real Qt prefix, for example:\n"
+            "  cmake -S . -B build -DCMAKE_PREFIX_PATH=\"C:/Qt/6.8.2/msvc2022_64\"\n"
+            "The path must contain lib/cmake/Qt6/Qt6Config.cmake.\n"
+            "If you only want core/storage/tests, configure with:\n"
+            "  cmake -S . -B build -DMYCELLS_BUILD_APP=OFF"
+        )
+    endif()
+
+    string(TOLOWER "${Qt6_DIR};${CMAKE_PREFIX_PATH}" MYCELLS_QT_HINT_LOWER)
+    if(MSVC AND MYCELLS_QT_HINT_LOWER MATCHES "mingw")
+        message(FATAL_ERROR
+            "[MyCells] Compiler/Qt ABI mismatch: Visual Studio/MSVC generator is using a MinGW Qt package.\n"
+            "Use a Qt MSVC kit, for example C:/Qt/6.11.0/msvc2022_64, or configure with a MinGW generator:\n"
+            "  cmake -S . -B build-mingw -G Ninja "
+            "-DCMAKE_MAKE_PROGRAM=C:/Qt/Tools/Ninja/ninja.exe "
+            "-DCMAKE_C_COMPILER=C:/Qt/Tools/mingw1310_64/bin/gcc.exe "
+            "-DCMAKE_CXX_COMPILER=C:/Qt/Tools/mingw1310_64/bin/g++.exe "
+            "-DCMAKE_PREFIX_PATH=C:/Qt/6.11.0/mingw_64"
+        )
+    endif()
+    if(MINGW AND MYCELLS_QT_HINT_LOWER MATCHES "msvc")
+        message(FATAL_ERROR
+            "[MyCells] Compiler/Qt ABI mismatch: MinGW compiler is using an MSVC Qt package.\n"
+            "Use C:/Qt/6.11.0/mingw_64, or switch to a Visual Studio/MSVC generator."
+        )
+    endif()
+
+    set(CMAKE_AUTOMOC ON)
+    set(CMAKE_AUTORCC ON)
+    set(CMAKE_AUTOUIC ON)
+    qt_standard_project_setup()
+
+    if(COMMAND qt_policy)
+        qt_policy(SET QTP0001 NEW)
+        qt_policy(SET QTP0004 NEW)
+    endif()
+endif()
+
 # ------------------------------------------------------------
 # Helper: append only files that actually exist
 # ------------------------------------------------------------
@@ -169,30 +212,48 @@ endif()
 # Build only if src/app/main.cpp exists
 # ------------------------------------------------------------
 if(MYCELLS_BUILD_APP)
-    set(APP_MAIN "${CMAKE_CURRENT_SOURCE_DIR}/src/app/main.cpp")
+    set(APP_SOURCES)
+    mycells_append_existing(APP_SOURCES
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/app/main.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/app/AppController.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/app/AppController.h"
+    )
 
-    if(EXISTS "${APP_MAIN}")
-        add_executable(MyCells "${APP_MAIN}")
+    if(APP_SOURCES)
+        qt_add_executable(MyCells ${APP_SOURCES})
         mycells_apply_common_settings(MyCells)
 
         target_link_libraries(MyCells
             PRIVATE
+                Qt6::Core
+                Qt6::Gui
+                Qt6::Quick
+                Qt6::Qml
+                Qt6::QuickControls2
                 acell_core
         )
-
-        if(TARGET acell_services)
-            target_link_libraries(MyCells PRIVATE acell_services)
-        endif()
 
         if(TARGET acell_storage)
             target_link_libraries(MyCells PRIVATE acell_storage)
         endif()
 
+        if(TARGET acell_services)
+            target_link_libraries(MyCells PRIVATE acell_services)
+        endif()
+
+        qt_add_qml_module(MyCells
+            URI MyCells
+            VERSION 1.0
+            NO_IMPORT_SCAN
+            QML_FILES
+                src/ui/qml/Main.qml
+        )
+
         set_target_properties(MyCells PROPERTIES
             OUTPUT_NAME "MyCells"
         )
     else()
-        message(STATUS "[MyCells] src/app/main.cpp not found. Skipping app target.")
+        message(STATUS "[MyCells] app sources not found. Skipping Qt app target.")
     endif()
 endif()
 

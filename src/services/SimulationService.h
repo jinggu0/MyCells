@@ -10,8 +10,10 @@
 #include "../storage/EnvironmentRepository.h"
 #include "../storage/EventLogRepository.h"
 #include "../storage/UserActionRepository.h"
+#include "../storage/StorageTypes.h"
 
 #include <string>
+#include <vector>
 
 namespace acell
 {
@@ -34,6 +36,9 @@ public:
     void setPh(double ph);
     void reduceToxin(double amount);
     void renameCell(const std::string& new_name);
+
+    std::vector<storage::EventLogEntry> loadRecentEvents(int limit);
+    std::vector<storage::UserActionEntry> loadRecentActions(int limit);
 
     const core::CellState& cell() const;
     const core::EnvironmentState& environment() const;

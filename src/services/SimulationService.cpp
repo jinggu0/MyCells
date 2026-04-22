@@ -627,5 +627,15 @@ std::string SimulationService::readTextFile(const std::string& path)
     return oss.str();
 }
 
+std::vector<acell::storage::EventLogEntry> acell::services::SimulationService::loadRecentEvents(int limit)
+{
+    return event_repo_.loadRecent(cell_id_, limit);
+}
+
+std::vector<acell::storage::UserActionEntry> acell::services::SimulationService::loadRecentActions(int limit)
+{
+    return action_repo_.loadRecent(cell_id_, limit);
+}
+
 } // namespace services
 } // namespace acell
